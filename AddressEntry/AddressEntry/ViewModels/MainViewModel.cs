@@ -15,23 +15,33 @@ namespace AddressEntry.ViewModels
         private readonly Geocoder _geocoder = new Geocoder();
         public MainViewModel()
         {
-            this.WhenAnyValue(x => x.Street
-                                , x => x.PostalCode
-                                , x => x.City
-                                , x => x.Country
-                                , (street, postalCode, city, country) => GetCoordinates(street, postalCode, city, country))
-                                .SelectMany(x => x)
-                                .Subscribe(x => Position = x);
+            HandleSetAddress = ReactiveCommand.CreateFromObservable<Position, (string Street, int PostalCode, string City, string Country)>((position) => GetAddress(position));
+            HandleSetAddress.Subscribe((addrs) => {
+                Street = addrs.Street;
+                PostalCode = addrs.PostalCode;
+                City = addrs.City;
+                Country = addrs.Country;
+            });
 
-            this.WhenAnyValue(x => x.Position
-                                    , (p) => GetAddress(p))
-                                    .SelectMany(x => x)
-                                    .Subscribe((address) => {
-                                        Street = address.Street;
-                                        PostalCode = address.PostalCode;
-                                        City = address.City;
-                                        Country = address.Country;
-                                    } );
+            HandleSetPosition = ReactiveCommand.CreateFromObservable(() => GetCoordinates(Street, PostalCode, City, Country));
+            HandleSetPosition.Subscribe((p) => Position = p);
+            //this.WhenAnyValue(x => x.Street
+            //                    , x => x.PostalCode
+            //                    , x => x.City
+            //                    , x => x.Country
+            //                    , (street, postalCode, city, country) => GetCoordinates(street, postalCode, city, country))
+            //                    .SelectMany(x => x)
+            //                    .Subscribe(x => Position = x);
+
+            //this.WhenAnyValue(x => x.Position
+            //                        , (p) => GetAddress(p))
+            //                        .SelectMany(x => x)
+            //                        .Subscribe((address) => {
+            //                            Street = address.Street;
+            //                            PostalCode = address.PostalCode;
+            //                            City = address.City;
+            //                            Country = address.Country;
+            //                        } );
                                 //.ToPropertyEx(this, x => x.Position);
         }
 
@@ -57,8 +67,9 @@ namespace AddressEntry.ViewModels
         [Reactive] public int PostalCode { get; set; }
         [Reactive] public string City { get; set; }
         [Reactive] public string Country { get; set; }
-        //public Position Position { [ObservableAsProperty] get; }
         [Reactive] public Position Position { get; set; }
+        public ReactiveCommand<System.Reactive.Unit, Position> HandleSetPosition { get; set; }
+        public ReactiveCommand<Position, (string Street, int PostalCode, string City, string Country)> HandleSetAddress { get; set; }
 
         private async Task<Location> GetLocation()
         {

@@ -19,5 +19,19 @@ namespace AddressEntry
         {
             InitializeComponent();
         }
+
+        private void SetPin()
+        {
+            Pin pin = new Pin
+            {
+                Label = "The Place",
+                Address = $"{ViewModel.Street}, {ViewModel.PostalCode} {ViewModel.City}, {ViewModel.Country}",
+                Type = PinType.Place,
+                Position = ViewModel.Position
+            };
+
+            MapControl.Pins.Clear();
+            MapControl.Pins.Add(pin);
+        }
     }
 }

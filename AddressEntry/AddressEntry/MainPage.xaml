@@ -33,6 +33,8 @@
             <Entry x:Name="Country"
                    Placeholder="Country"
                    Text="{Binding Country}" />
+            <Button Text="Set Position"
+                    Command="{Binding HandleSetPosition}" />
         </StackLayout>
     </Grid>
 
