@@ -1,14 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<rxui:ReactiveContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:d="http://xamarin.com/schemas/2014/forms/design"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:viewmodel="clr-namespace:AddressEntry.ViewModels"
-                     xmlns:rxui="clr-namespace:ReactiveUI.XamForms;assembly=ReactiveUI.XamForms"
-                     mc:Ignorable="d"
+             xmlns:vm="clr-namespace:AddressEntry.ViewModels"
+             mc:Ignorable="d"
              xmlns:maps="clr-namespace:Xamarin.Forms.Maps;assembly=Xamarin.Forms.Maps"
              x:Class="AddressEntry.MainPage"
-             x:DataType="{x:Type viewmodel:MainViewModel}">
+             x:DataType="{x:Type vm:MainViewModel}">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -16,17 +15,15 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <maps:Map x:Name="MapControl"
-                  IsVisible="{Binding IsPickingLocationFromMap}">
-            
-        </maps:Map>
+                  MapClicked="HandleMapClick" />
         <StackLayout Grid.Row="1">
             <Entry x:Name="Street"
                    Placeholder="Street"
                    Text="{Binding Street}" />
-            <Entry x:Name="Postalcode"
+            <!--<Entry x:Name="Postalcode"
                    Placeholder="Postalcode"
                    Keyboard="Numeric"
-                   Text="{Binding PostalCode}" />
+                   Text="{Binding PostalCode}" />-->
             <Entry x:Name="City"
                    Placeholder="City"
                    Text="{Binding City}" />
@@ -34,8 +31,8 @@
                    Placeholder="Country"
                    Text="{Binding Country}" />
             <Button Text="Set Position"
-                    Command="{Binding HandleSetPosition}" />
+                    Command="{Binding ExecuteSetPosition}" />
         </StackLayout>
     </Grid>
 
-</rxui:ReactiveContentPage>
+</ContentPage>

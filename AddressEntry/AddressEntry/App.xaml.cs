@@ -1,4 +1,6 @@
-﻿using System;
+﻿using AddressEntry.ViewModels;
+using Splat;
+using System;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 

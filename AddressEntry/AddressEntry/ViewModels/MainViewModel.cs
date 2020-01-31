@@ -2,6 +2,7 @@
 using ReactiveUI.Fody.Helpers;
 using System;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
@@ -15,61 +16,47 @@ namespace AddressEntry.ViewModels
         private readonly Geocoder _geocoder = new Geocoder();
         public MainViewModel()
         {
-            HandleSetAddress = ReactiveCommand.CreateFromObservable<Position, (string Street, int PostalCode, string City, string Country)>((position) => GetAddress(position));
-            HandleSetAddress.Subscribe((addrs) => {
-                Street = addrs.Street;
-                PostalCode = addrs.PostalCode;
-                City = addrs.City;
-                Country = addrs.Country;
-            });
+            ExecuteSetAddress = ReactiveCommand.CreateFromTask<Position>((position) => SetAddress(position));
 
-            HandleSetPosition = ReactiveCommand.CreateFromObservable(() => GetCoordinates(Street, PostalCode, City, Country));
-            HandleSetPosition.Subscribe((p) => Position = p);
-            //this.WhenAnyValue(x => x.Street
-            //                    , x => x.PostalCode
-            //                    , x => x.City
-            //                    , x => x.Country
-            //                    , (street, postalCode, city, country) => GetCoordinates(street, postalCode, city, country))
-            //                    .SelectMany(x => x)
-            //                    .Subscribe(x => Position = x);
-
-            //this.WhenAnyValue(x => x.Position
-            //                        , (p) => GetAddress(p))
-            //                        .SelectMany(x => x)
-            //                        .Subscribe((address) => {
-            //                            Street = address.Street;
-            //                            PostalCode = address.PostalCode;
-            //                            City = address.City;
-            //                            Country = address.Country;
-            //                        } );
-                                //.ToPropertyEx(this, x => x.Position);
+            ExecuteSetPosition = ReactiveCommand.CreateFromTask(() => SetPosition(Street, PostalCode, City, Country));
         }
 
-        private IObservable<(string Street, int PostalCode, string City, string Country)> GetAddress(Position p)
+        private async Task SetAddress(Position p)
         {
-            (string Street, int PostalCode, string City, string Country) SplitAddress(string address)
+            (string Street, string City, string Country) SplitAddress(string address)
             {
-                var addressParts = address.Split('\n');
+                var addressParts = address.Split(',');
+                if(address.Length < 4) return (string.Empty, string.Empty, string.Empty);
+                var street = addressParts[0];
+                var city = addressParts[1];
+                var country = addressParts[2];
 
-                return ("gna", 123, "gna", "gna");
+                return (street, city, country);
             }
 
-            return _geocoder.GetAddressesForPositionAsync(p).ToObservable().Select(a => SplitAddress(a.First())).FirstAsync();
+            var addrs =  await _geocoder.GetAddressesForPositionAsync(p).ToObservable().Select(a => SplitAddress(a.First())).FirstAsync();
+            Street = addrs.Street;
+            City = addrs.City;
+            Country = addrs.Country;
+            Position = p;
         }
 
-        private IObservable<Position> GetCoordinates(string street, int postalCode, string city, string country)
+        private async Task SetPosition(string street, string postalCode, string city, string country)
         {
             var geocoder = new Geocoder();
-            return geocoder.GetPositionsForAddressAsync($"{street}, {postalCode} {city}, {country}").ToObservable().Select(p => p.First()).FirstAsync();
+            Position = await geocoder.GetPositionsForAddressAsync($"{street}, {postalCode} {city}, {country}")
+                            .ToObservable()
+                            .Select(p => p.First())
+                            .FirstAsync();
         }
 
         [Reactive] public string Street { get; set; }
-        [Reactive] public int PostalCode { get; set; }
+        [Reactive] public string PostalCode { get; set; }
         [Reactive] public string City { get; set; }
         [Reactive] public string Country { get; set; }
         [Reactive] public Position Position { get; set; }
-        public ReactiveCommand<System.Reactive.Unit, Position> HandleSetPosition { get; set; }
-        public ReactiveCommand<Position, (string Street, int PostalCode, string City, string Country)> HandleSetAddress { get; set; }
+        public ReactiveCommand<Unit, Unit> ExecuteSetPosition { get; set; }
+        public ReactiveCommand<Position, Unit> ExecuteSetAddress { get; set; }
 
         private async Task<Location> GetLocation()
         {
