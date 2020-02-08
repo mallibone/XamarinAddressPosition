@@ -19,16 +19,20 @@ namespace AddressEntry
         {
             InitializeComponent();
             BindingContext = ViewModel;
-            this.WhenAnyValue(v => v.ViewModel.Position)
-                .Subscribe((Position p) => MainThread.BeginInvokeOnMainThread(() => SetPin(p)));
         }
 
         public MainViewModel ViewModel { get; } = new MainViewModel();
 
-        private void HandleMapClick(object sender, MapClickedEventArgs args)
+        protected override void OnAppearing()
         {
-            var selectedPosition = args.Position;
-            ViewModel.ExecuteSetAddress.Execute(selectedPosition);
+            base.OnAppearing();
+            this.WhenAnyValue(v => v.ViewModel.Position)
+                .Subscribe((Position p) => MainThread.BeginInvokeOnMainThread(() => SetPin(p)));
+
+            Observable.FromEventPattern<MapClickedEventArgs>(
+                mc => MapControl.MapClicked += mc, 
+                mc => MapControl.MapClicked -= mc)
+                .Subscribe(ev => ViewModel.ExecuteSetAddress.Execute(ev.EventArgs.Position));
         }
 
         private Unit SetPin(Position position)

@@ -14,16 +14,12 @@
             <RowDefinition Height="2*" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <maps:Map x:Name="MapControl"
-                  MapClicked="HandleMapClick" />
-        <StackLayout Grid.Row="1">
+        <maps:Map x:Name="MapControl" />
+        <StackLayout Grid.Row="1"
+                     Margin="16">
             <Entry x:Name="Street"
                    Placeholder="Street"
                    Text="{Binding Street}" />
-            <!--<Entry x:Name="Postalcode"
-                   Placeholder="Postalcode"
-                   Keyboard="Numeric"
-                   Text="{Binding PostalCode}" />-->
             <Entry x:Name="City"
                    Placeholder="City"
                    Text="{Binding City}" />
