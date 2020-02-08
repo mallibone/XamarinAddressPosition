@@ -7,6 +7,7 @@ using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
 using Xamarin.Essentials;
+using Xamarin.Forms;
 using Xamarin.Forms.Maps;
 
 namespace AddressEntry.ViewModels
@@ -19,14 +20,48 @@ namespace AddressEntry.ViewModels
             ExecuteSetAddress = ReactiveCommand.CreateFromTask<Position>((position) => SetAddress(position));
 
             ExecuteSetPosition = ReactiveCommand.CreateFromTask(() => SetPosition(Street, PostalCode, City, Country));
+
+            Geolocation.GetLastKnownLocationAsync()
+                        .ToObservable()
+                        .Catch(Observable.Return(new Location()))
+                        .SubscribeOn(RxApp.MainThreadScheduler)
+                        .Subscribe(async location => { 
+                            var position = new Position(location.Latitude, location.Longitude);
+                            Position = position;
+                            await SetAddress(position);
+                        });
         }
+
+        [Reactive] public string Street { get; set; }
+        [Reactive] public string PostalCode { get; set; }
+        [Reactive] public string City { get; set; }
+        [Reactive] public string Country { get; set; }
+        [Reactive] public Position Position { get; set; }
+        public ReactiveCommand<Unit, Unit> ExecuteSetPosition { get; set; }
+        public ReactiveCommand<Position, Unit> ExecuteSetAddress { get; set; }
 
         private async Task SetAddress(Position p)
         {
             (string Street, string City, string Country) SplitAddress(string address)
             {
-                var addressParts = address.Split(',');
-                if(address.Length < 4) return (string.Empty, string.Empty, string.Empty);
+                if(string.IsNullOrEmpty(address)) return (string.Empty, string.Empty, string.Empty);
+                string[] addressParts; 
+                switch (Device.RuntimePlatform) 
+                { 
+                    case Device.Android: 
+                        addressParts = address.Split(','); 
+                        break; 
+                    case Device.UWP: 
+                        addressParts = address.Split(new[] { '\r','\n' }, StringSplitOptions.RemoveEmptyEntries); 
+                        break; 
+                    case Device.iOS: 
+                        addressParts = address.Split('\n'); 
+                        break;
+                    default:
+                        addressParts = new string[0];
+                        break;
+                }
+                if(addressParts.Length < 3) return (string.Empty, string.Empty, string.Empty);
                 var street = addressParts[0];
                 var city = addressParts[1];
                 var country = addressParts[2];
@@ -34,7 +69,7 @@ namespace AddressEntry.ViewModels
                 return (street, city, country);
             }
 
-            var addrs =  await _geocoder.GetAddressesForPositionAsync(p).ToObservable().Select(a => SplitAddress(a.First())).FirstAsync();
+            var addrs =  await _geocoder.GetAddressesForPositionAsync(p).ToObservable().Select(a => SplitAddress(a.FirstOrDefault())).FirstAsync();
             Street = addrs.Street;
             City = addrs.City;
             Country = addrs.Country;
@@ -49,14 +84,6 @@ namespace AddressEntry.ViewModels
                             .Select(p => p.First())
                             .FirstAsync();
         }
-
-        [Reactive] public string Street { get; set; }
-        [Reactive] public string PostalCode { get; set; }
-        [Reactive] public string City { get; set; }
-        [Reactive] public string Country { get; set; }
-        [Reactive] public Position Position { get; set; }
-        public ReactiveCommand<Unit, Unit> ExecuteSetPosition { get; set; }
-        public ReactiveCommand<Position, Unit> ExecuteSetAddress { get; set; }
 
         private async Task<Location> GetLocation()
         {
