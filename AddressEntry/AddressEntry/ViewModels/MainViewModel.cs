@@ -84,43 +84,5 @@ namespace AddressEntry.ViewModels
                             .Select(p => p.First())
                             .FirstAsync();
         }
-
-        private async Task<Location> GetLocation()
-        {
-            try
-            {
-                Location location = await Geolocation.GetLastKnownLocationAsync();
-
-                if (location != null)
-                {
-                    Console.WriteLine($"Latitude: {location.Latitude}, Longitude: {location.Longitude}, Altitude: {location.Altitude}");
-                }
-                return location;
-            }
-            catch (FeatureNotSupportedException fnsEx)
-            {
-                // Handle not supported on device exception
-
-                return null;
-            }
-            catch (FeatureNotEnabledException fneEx)
-            {
-                // Handle not enabled on device exception
-
-                return null;
-            }
-            catch (PermissionException pEx)
-            {
-                // Handle permission exception
-
-                return null;
-            }
-            catch (Exception ex)
-            {
-                // Unable to get location
-
-                return null;
-            }
-        }
     }
 }
