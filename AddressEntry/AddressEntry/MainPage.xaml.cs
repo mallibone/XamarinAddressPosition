@@ -3,6 +3,7 @@ using ReactiveUI;
 using System;
 using System.ComponentModel;
 using System.Reactive;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Xamarin.Essentials;
 using Xamarin.Forms;
@@ -15,6 +16,8 @@ namespace AddressEntry
     [DesignTimeVisible(false)]
     public partial class MainPage : ContentPage
     {
+        private CompositeDisposable _disposable;
+
         public MainPage()
         {
             InitializeComponent();
@@ -26,13 +29,23 @@ namespace AddressEntry
         protected override void OnAppearing()
         {
             base.OnAppearing();
+            _disposable = new CompositeDisposable();
+
             this.WhenAnyValue(v => v.ViewModel.Position)
-                .Subscribe((Position p) => MainThread.BeginInvokeOnMainThread(() => SetPin(p)));
+                .Subscribe((Position p) => MainThread.BeginInvokeOnMainThread(() => SetPin(p)))
+                .DisposeWith(_disposable);
 
             Observable.FromEventPattern<MapClickedEventArgs>(
                 mc => MapControl.MapClicked += mc, 
                 mc => MapControl.MapClicked -= mc)
-                .Subscribe(ev => ViewModel.ExecuteSetAddress.Execute(ev.EventArgs.Position));
+                .Subscribe(ev => ViewModel.ExecuteSetAddress.Execute(ev.EventArgs.Position))
+                .DisposeWith(_disposable);
+        }
+
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+            _disposable.Dispose();
         }
 
         private Unit SetPin(Position position)
@@ -40,7 +53,7 @@ namespace AddressEntry
             Pin pin = new Pin
             {
                 Label = "The Place",
-                Address = $"{ViewModel.Street}, {ViewModel.PostalCode} {ViewModel.City}, {ViewModel.Country}",
+                Address = $"{ViewModel.Street}, {ViewModel.City}, {ViewModel.Country}",
                 Type = PinType.Place,
                 Position = position
             };
