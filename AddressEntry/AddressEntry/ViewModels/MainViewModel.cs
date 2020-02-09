@@ -21,6 +21,8 @@ namespace AddressEntry.ViewModels
 
             ExecuteSetPosition = ReactiveCommand.CreateFromTask(() => SetPosition(Street, PostalCode, City, Country));
 
+            ExecuteNavigateTo = ReactiveCommand.CreateFromTask(() => NavigateTo());
+
             Geolocation.GetLastKnownLocationAsync()
                         .ToObservable()
                         .Catch(Observable.Return(new Location()))
@@ -39,6 +41,7 @@ namespace AddressEntry.ViewModels
         [Reactive] public Position Position { get; set; }
         public ReactiveCommand<Unit, Unit> ExecuteSetPosition { get; set; }
         public ReactiveCommand<Position, Unit> ExecuteSetAddress { get; set; }
+        public ReactiveCommand<Unit, Unit> ExecuteNavigateTo { get; set; }
 
         private async Task SetAddress(Position p)
         {
@@ -69,20 +72,28 @@ namespace AddressEntry.ViewModels
                 return (street, city, country);
             }
 
-            var addrs =  await _geocoder.GetAddressesForPositionAsync(p).ToObservable().Select(a => SplitAddress(a.FirstOrDefault())).FirstAsync();
-            Street = addrs.Street;
-            City = addrs.City;
-            Country = addrs.Country;
+            var addrs = (await Geocoding.GetPlacemarksAsync(new Location(p.Latitude, p.Longitude))).FirstOrDefault();
+            Street = $"{addrs.Thoroughfare} {addrs.SubThoroughfare}";
+            City = $"{addrs.PostalCode} {addrs.Locality}";
+            Country = addrs.CountryName;
             Position = p;
         }
 
         private async Task SetPosition(string street, string postalCode, string city, string country)
         {
-            var geocoder = new Geocoder();
-            Position = await geocoder.GetPositionsForAddressAsync($"{street}, {postalCode} {city}, {country}")
-                            .ToObservable()
-                            .Select(p => p.First())
-                            .FirstAsync();
+            var location = (await Geocoding.GetLocationsAsync($"{street}, {postalCode} {city}, {country}")).FirstOrDefault();
+
+            if (location == null) return;
+
+            Position = new Position(location.Latitude, location.Longitude);
+        }
+
+        private Task NavigateTo()
+        {
+            // Check out: https://docs.microsoft.com/en-us/xamarin/essentials/maps
+            var location = new Location(Position.Latitude, Position.Longitude);
+            var options = new MapLaunchOptions { NavigationMode = NavigationMode.Driving };
+            return Xamarin.Essentials.Map.OpenAsync(location, options);
         }
     }
 }

@@ -26,7 +26,11 @@
             <Entry x:Name="Country"
                    Placeholder="Country"
                    Text="{Binding Country}" />
+            <Button Text="Navigate To"
+                    Margin="16,0"
+                    Command="{Binding ExecuteNavigateTo}" />
             <Button Text="Set Position"
+                    Margin="16,0"
                     Command="{Binding ExecuteSetPosition}" />
         </StackLayout>
     </Grid>
